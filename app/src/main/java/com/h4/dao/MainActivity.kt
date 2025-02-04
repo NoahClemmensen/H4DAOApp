@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -29,9 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import com.h4.dao.services.ApiService
 import com.h4.dao.ui.theme.DAOTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var apiService: ApiService = ApiService("https://jsonplaceholder.typicode.com/posts/1")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -41,69 +45,76 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun Scaffold() {
+        var presses by remember { mutableIntStateOf(0) }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun Scaffold() {
-    var presses by remember { mutableIntStateOf(0) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                colors = topAppBarColors(
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    colors = topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    title = {
+                        Text(text = "Top app bar")
+                    }
+                )
+            },
+            bottomBar = {
+                BottomAppBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                title = {
-                    Text(text = "Top app bar")
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ) {
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        text = "Bottom app bar",
+                    )
                 }
-            )
-        },
-        bottomBar = {
-            BottomAppBar(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = {
+                    lifecycleScope.launch {
+                        try {
+                            apiService.makeWebhookGetCall()
+                        } catch (e: Exception) {
+                            println("Error: ${e.message}")
+                        }
+                    }
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
+                }
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    text = "Bottom app bar",
-                )
-            }
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { presses++ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                modifier = Modifier.padding(8.dp),
-                text =
-                """
+                    modifier = Modifier.padding(8.dp),
+                    text =
+                    """
                     This is an example of a scaffold. It uses the Scaffold composable's parameters to create a screen with a simple top app bar, bottom app bar, and floating action button.
 
                     It also contains some basic inner content, such as this text.
 
                     You have pressed the floating action button $presses times.
                 """.trimIndent(),
-            )
-            Text("Hej")
+                )
+                Text("Hej")
+            }
         }
     }
-}
 
-@Preview(showBackground = true, name = "scaffold")
-@Composable
-fun ScaffoldPreview() {
-    DAOTheme {
-        Scaffold()
+    @Preview(showBackground = true, name = "scaffold")
+    @Composable
+    fun ScaffoldPreview() {
+        DAOTheme {
+            Scaffold()
+        }
     }
 }
