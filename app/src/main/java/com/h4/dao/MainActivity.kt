@@ -30,11 +30,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.h4.dao.services.ApiService
+import com.h4.dao.services.MyDataClass
 import com.h4.dao.ui.theme.DAOTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private var apiService: ApiService = ApiService("https://jsonplaceholder.typicode.com/posts/1")
+    private var apiService: ApiService = ApiService("http://10.142.124.72:3000/")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,6 +81,12 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch {
                         try {
                             apiService.makeWebhookGetCall()
+
+                            val data = MyDataClass(key = "value")
+                            apiService.makeWebhookPostCall(data)
+
+
+                            apiService.makeApiCall()
                         } catch (e: Exception) {
                             println("Error: ${e.message}")
                         }
