@@ -1,5 +1,6 @@
 package com.h4.dao
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,8 +10,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -30,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.h4.dao.services.ApiService
-import com.h4.dao.services.MyDataClass
 import com.h4.dao.ui.theme.DAOTheme
 import kotlinx.coroutines.launch
 
@@ -39,17 +42,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         setContent {
             DAOTheme {
-                Scaffold()
+                ScaffoldSetup()
             }
         }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun Scaffold() {
+    fun ScaffoldSetup() {
         var presses by remember { mutableIntStateOf(0) }
 
         Scaffold(
@@ -78,21 +82,10 @@ class MainActivity : ComponentActivity() {
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = {
-                    lifecycleScope.launch {
-                        try {
-                            apiService.makeWebhookGetCall()
-
-                            val data = MyDataClass(key = "value")
-                            apiService.makeWebhookPostCall(data)
-
-
-                            apiService.makeApiCall()
-                        } catch (e: Exception) {
-                            println("Error: ${e.message}")
-                        }
-                    }
+                    val intent = Intent(this, ScanningActivity::class.java)
+                    startActivity(intent)
                 }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "To scan")
                 }
             }
         ) { innerPadding ->
@@ -101,18 +94,39 @@ class MainActivity : ComponentActivity() {
                     .padding(innerPadding),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    modifier = Modifier.padding(8.dp),
-                    text =
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) {
+                    Text(text =
                     """
                     This is an example of a scaffold. It uses the Scaffold composable's parameters to create a screen with a simple top app bar, bottom app bar, and floating action button.
 
                     It also contains some basic inner content, such as this text.
 
                     You have pressed the floating action button $presses times.
-                """.trimIndent(),
-                )
-                Text("Hej")
+                    """.trimIndent()
+                    )
+
+                    Button(onClick = {
+                        lifecycleScope.launch {
+                            try {
+                                apiService.makeWebhookGetCall()
+
+                                val data = KeyValue(key = "value")
+                                apiService.makeWebhookPostCall(data)
+
+
+                                apiService.makeApiCall()
+                            } catch (e: Exception) {
+                                println("Error: ${e.message}")
+                            }
+                        }
+                        presses++
+                    }) {
+                        Text("Press me")
+                    }
+                }
             }
         }
     }
@@ -121,7 +135,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ScaffoldPreview() {
         DAOTheme {
-            Scaffold()
+            ScaffoldSetup()
         }
     }
 }

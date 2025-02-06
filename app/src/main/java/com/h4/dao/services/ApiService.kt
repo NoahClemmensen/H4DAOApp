@@ -1,5 +1,8 @@
 package com.h4.dao.services
 
+import com.h4.dao.KeyValue
+import com.h4.dao.interfaces.IApiService
+import com.h4.dao.interfaces.IWebhookService
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.ResponseBody
@@ -7,7 +10,6 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.*
 import retrofit2.Response
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -59,7 +61,7 @@ class ApiService(private val baseUrl: String) {
         enqueueCall(call, continuation)
     }
 
-    suspend fun makeWebhookPostCall(body: MyDataClass) = suspendCancellableCoroutine { continuation ->
+    suspend fun makeWebhookPostCall(body: KeyValue) = suspendCancellableCoroutine { continuation ->
         val call: Call<ResponseBody> = webhookService.post(body)
 
         continuation.invokeOnCancellation {
@@ -78,21 +80,4 @@ class ApiService(private val baseUrl: String) {
 
         enqueueCall(call, continuation)
     }
-}
-
-data class MyDataClass(
-    val key: String
-)
-
-interface IWebhookService {
-    @GET("ed6c80fd-283b-49d9-9e60-b9fe0d661ac4")
-    fun get(): Call<ResponseBody>
-
-    @POST("ed6c80fd-283b-49d9-9e60-b9fe0d661ac4")
-    fun post(@Body body: MyDataClass): Call<ResponseBody>
-}
-
-interface IApiService {
-    @GET("/hello")
-    fun hello(): Call<ResponseBody>
 }
