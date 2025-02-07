@@ -20,10 +20,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LibraryAdd
@@ -42,6 +44,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -115,7 +118,7 @@ class ScanningActivity : ComponentActivity() {
                             Icon(Icons.Filled.Check, contentDescription = "Localized description")
                         }
                         IconButton(onClick = {
-                            openCreatePackageDialog.value = true
+                            showBottomSheet.value = true
                         }) {
                             Icon(
                                 Icons.Outlined.Menu,
@@ -125,7 +128,7 @@ class ScanningActivity : ComponentActivity() {
                     },
                     floatingActionButton = {
                         FloatingActionButton(
-                            onClick = { showBottomSheet.value = true },
+                            onClick = { openCreatePackageDialog.value = true },
                         ) {
                             Icon(Icons.Outlined.LibraryAdd, "Add")
                         }
@@ -206,44 +209,64 @@ class ScanningActivity : ComponentActivity() {
     @Composable
     fun CreatePackageDialog(
         onDismissRequest: () -> Unit,
-        onConfirmation: () -> Unit,
+        onConfirmation: (String) -> Unit,
     ) {
-        Dialog(onDismissRequest = { onDismissRequest() }) {
-            // Draw a rectangle shape with rounded corners inside the dialog
+        var packageId by remember { mutableStateOf("") }
+        var isError by remember { mutableStateOf(false) }
+        Dialog(
+            onDismissRequest = { onDismissRequest() },
+        ) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(375.dp)
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("Create package", modifier = Modifier.padding(16.dp), fontSize = 20.sp)
+                    Icon(Icons.Outlined.LibraryAdd, "Add")
                     Text(
-                        text = "This is a dialog with buttons and an image.",
-                        modifier = Modifier.padding(16.dp),
+                        "Create package",
+                        modifier = Modifier.fillMaxWidth(),
+                        fontSize = 24.sp
+                    )
+                    Text(
+                        text = "Manually add a package to the system, by entering the package ID.",
+                        modifier = Modifier.fillMaxWidth(),
+                        fontSize = 14.sp
+                    )
+                    TextField(
+                        value = packageId,
+                        onValueChange = { packageId = it },
+                        label = { Text("Enter package ID") },
+                        placeholder = { Text("E.g 863127390") },
+                        isError = isError,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
+                        horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(
-                            onClick = { onDismissRequest() },
-                            modifier = Modifier.padding(8.dp),
+                            onClick = { onDismissRequest() }
                         ) {
-                            Text("Dismiss")
+                            Text("Cancel")
                         }
                         TextButton(
-                            onClick = { onConfirmation() },
-                            modifier = Modifier.padding(8.dp),
+                            onClick = {
+                                if (packageId.isEmpty()) {
+                                    isError = true
+                                } else {
+                                    onConfirmation(packageId)
+                                }
+                            }
                         ) {
-                            Text("Confirm")
+                            Text("Add")
                         }
                     }
                 }
@@ -263,12 +286,6 @@ class ScanningActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Button(
-                onClick = { showBottomSheet.value = true }
-            ) {
-                Text("Display partial bottom sheet")
-            }
-
             if (showBottomSheet.value) {
                 ModalBottomSheet(
                     modifier = Modifier.fillMaxHeight(),
@@ -281,14 +298,6 @@ class ScanningActivity : ComponentActivity() {
                     )
                 }
             }
-        }
-    }
-
-    @Preview(showBackground = true, name = "scaffold")
-    @Composable
-    fun ScaffoldPreview() {
-        DAOTheme {
-            ScaffoldSetup()
         }
     }
 
@@ -307,7 +316,7 @@ class ScanningActivity : ComponentActivity() {
         }
 
         if (requestPermission) {
-            requestCameraPermission { isGranted ->
+            RequestCameraPermission { isGranted ->
                 isPermissionGranted = isGranted
                 requestPermission = false
             }
@@ -352,7 +361,7 @@ class ScanningActivity : ComponentActivity() {
     }
 
     @Composable
-    fun requestCameraPermission(
+    fun RequestCameraPermission(
         onResult: (Boolean) -> Unit,
     ) {
         val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -361,6 +370,36 @@ class ScanningActivity : ComponentActivity() {
 
         LaunchedEffect(Unit) {
             launcher.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+
+    @Preview(showBackground = true, name = "scaffold")
+    @Composable
+    fun ScaffoldPreview() {
+        DAOTheme {
+            ScaffoldSetup()
+        }
+    }
+
+    @Preview(showBackground = true, name = "alert dialog")
+    @Composable
+    fun AlertDialogPreview() {
+        DAOTheme {
+            ConfirmationDialog(
+                onDismissRequest = {},
+                onConfirmation = {},
+            )
+        }
+    }
+
+    @Preview(showBackground = true, name = "create package dialog")
+    @Composable
+    fun CreatePackageDialogPreview() {
+        DAOTheme {
+            CreatePackageDialog(
+                onDismissRequest = {},
+                onConfirmation = {},
+            )
         }
     }
 }

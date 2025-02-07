@@ -1,6 +1,6 @@
 package com.h4.dao.services
 
-import com.h4.dao.KeyValue
+import com.h4.dao.Package
 import com.h4.dao.interfaces.IApiService
 import com.h4.dao.interfaces.IWebhookService
 import kotlinx.coroutines.CancellableContinuation
@@ -61,7 +61,7 @@ class ApiService(private val baseUrl: String) {
         enqueueCall(call, continuation)
     }
 
-    suspend fun makeWebhookPostCall(body: KeyValue) = suspendCancellableCoroutine { continuation ->
+    suspend fun makeWebhookPostCall(body: Package) = suspendCancellableCoroutine { continuation ->
         val call: Call<ResponseBody> = webhookService.post(body)
 
         continuation.invokeOnCancellation {
