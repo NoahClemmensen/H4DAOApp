@@ -1,6 +1,8 @@
 package com.h4.dao.services
 
+import android.util.Log
 import com.h4.dao.Package
+import com.h4.dao.PendingPackage
 import com.h4.dao.interfaces.IApiService
 import com.h4.dao.interfaces.IWebhookService
 import kotlinx.coroutines.CancellableContinuation
@@ -73,6 +75,16 @@ class ApiService(private val baseUrl: String) {
 
     suspend fun makeApiCall() = suspendCancellableCoroutine { continuation ->
         val call: Call<ResponseBody> = apiService.hello()
+
+        continuation.invokeOnCancellation {
+            call.cancel()
+        }
+
+        enqueueCall(call, continuation)
+    }
+
+    suspend fun getPendingPackages() = suspendCancellableCoroutine { continuation ->
+        val call: Call<List<PendingPackage>> = apiService.getPendingPackages()
 
         continuation.invokeOnCancellation {
             call.cancel()

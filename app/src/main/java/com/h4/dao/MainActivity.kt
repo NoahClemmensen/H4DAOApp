@@ -2,6 +2,7 @@ package com.h4.dao
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,7 +37,7 @@ import com.h4.dao.ui.theme.DAOTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private var apiService: ApiService = ApiService("http://10.142.124.72:3000/")
+    private var apiService: ApiService = ApiService("http://172.27.232.4:3000/")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,6 +131,21 @@ class MainActivity : ComponentActivity() {
                         presses++
                     }) {
                         Text("Press me")
+                    }
+
+                    Button(onClick = {
+                        lifecycleScope.launch {
+                            try {
+                                val pendingPackages = apiService.getPendingPackages()
+                                Log.d("MainActivity", "Pending packages: $pendingPackages")
+
+                            } catch (e: Exception) {
+                                println("Error: ${e.message}")
+                            }
+                        }
+                        presses++
+                    }) {
+                        Text("Get pending packages")
                     }
                 }
             }

@@ -3,6 +3,7 @@ package com.h4.dao
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
@@ -49,6 +50,7 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,18 +66,43 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.common.util.concurrent.ListenableFuture
+import com.h4.dao.services.ApiService
 import com.h4.dao.services.CameraService
 import com.h4.dao.ui.theme.DAOTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 
 class ScanningActivity : ComponentActivity() {
     private var camService: CameraService = CameraService()
+    private var apiService: ApiService = ApiService("http://172.27.232.4:3000/")
+
     private var showBottomSheet = mutableStateOf(false)
     private var openCreatePackageDialog = mutableStateOf(false)
     private var openConfirmationDialog = mutableStateOf(false)
+    private var pendingPackages: MutableStateFlow<List<PendingPackage>> = MutableStateFlow(
+        listOf()
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            try {
+                val packages = apiService.getPendingPackages()
+                if (packages != null) {
+                    pendingPackages.value = packages
+                } else {
+                    pendingPackages.value = listOf()
+                }
+            } catch (e: Exception) {
+                Log.e("ScanningActivity", "Failed to fetch pending packages", e)
+                pendingPackages.value = listOf()
+            }
+        }
+
         enableEdgeToEdge()
         setContent {
             DAOTheme {
