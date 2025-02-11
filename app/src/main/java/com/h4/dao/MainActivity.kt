@@ -37,7 +37,7 @@ import com.h4.dao.ui.theme.DAOTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private var apiService: ApiService = ApiService("http://172.27.232.4:3000/")
+    private var apiService: ApiService = ApiService("http://172.27.232.5:3000/")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

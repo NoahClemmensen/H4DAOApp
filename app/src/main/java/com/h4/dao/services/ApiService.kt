@@ -16,7 +16,6 @@ import retrofit2.Response
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-
 class ApiService(private val baseUrl: String) {
     private val webhookService: IWebhookService by lazy {
         Retrofit.Builder()
@@ -85,6 +84,16 @@ class ApiService(private val baseUrl: String) {
 
     suspend fun getPendingPackages() = suspendCancellableCoroutine { continuation ->
         val call: Call<List<PendingPackage>> = apiService.getPendingPackages()
+
+        continuation.invokeOnCancellation {
+            call.cancel()
+        }
+
+        enqueueCall(call, continuation)
+    }
+
+    suspend fun registerPackages(packages: List<Int>) = suspendCancellableCoroutine { continuation ->
+        val call: Call<Boolean> = apiService.registerPackages(packages)
 
         continuation.invokeOnCancellation {
             call.cancel()
