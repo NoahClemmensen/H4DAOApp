@@ -36,13 +36,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.h4.dao.databinding.ActivityScanningBinding
 import com.h4.dao.services.ApiService
 import com.h4.dao.ui.theme.DAOTheme
 import kotlinx.coroutines.launch
 import kotlin.math.exp
 
 class MainActivity : ComponentActivity() {
-    private var apiService: ApiService = ApiService("http://172.27.232.5:3000/")
+    private var cameraPermission = android.Manifest.permission.CAMERA
+
+    private var apiService: ApiService = ApiService("http://10.142.124.72:3000/")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

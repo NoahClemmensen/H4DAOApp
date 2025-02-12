@@ -4,6 +4,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import com.google.mlkit.vision.barcode.common.Barcode
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Inventory2
@@ -534,7 +533,7 @@ class ScanningActivity : ComponentActivity() {
         }
 
         when (isPermissionGranted) {
-            true -> CameraPreview(camService.GetCameraProviderFuture(context))
+            true -> CameraPreview(camService.getCameraProviderFuture(context))
             false -> Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround) {
                 Button(onClick = {
                     requestPermission = true
@@ -548,6 +547,9 @@ class ScanningActivity : ComponentActivity() {
     @Composable
     fun CameraPreview(cameraProviderFuture: ListenableFuture<ProcessCameraProvider>) {
         val lifecycleOwner = LocalLifecycleOwner.current
+        var showDialog by remember { mutableStateOf(false) }
+        var detectedBarcode by remember { mutableStateOf<Barcode?>(null) }
+        var isScanning by remember { mutableStateOf(true) }
 
         AndroidView(
             factory = { context ->
@@ -559,13 +561,66 @@ class ScanningActivity : ComponentActivity() {
                     post {
                         cameraProviderFuture.addListener(Runnable {
                             val cameraProvider = cameraProviderFuture.get()
-                            camService.BindPreview(
+                            camService.bindPreview(
                                 cameraProvider,
                                 lifecycleOwner,
                                 this,
-                            )
+                            ) { barcodes ->
+                                if (isScanning) {
+                                    // Handle detected barcodes
+                                    barcodes.forEach { barcode ->
+                                        detectedBarcode = barcode
+                                        showDialog = true
+                                        isScanning = false
+                                    }
+                                }
+                            }
                         }, ContextCompat.getMainExecutor(context))
                     }
+                }
+            }
+        )
+
+        if (showDialog && detectedBarcode != null) {
+            BarcodeDetailsDialog(
+                barcode = detectedBarcode!!,
+                onDismissRequest = {
+                    showDialog = false
+                    isScanning = true
+                },
+                onAdd = {
+                    // Handle add action
+                    showDialog = false
+                    isScanning = true
+                },
+                onDontAdd = {
+                    // Handle don't add action
+                    showDialog = false
+                    isScanning = true
+                }
+            )
+        }
+    }
+
+    @Composable
+    fun BarcodeDetailsDialog(
+        barcode: Barcode,
+        onDismissRequest: () -> Unit,
+        onAdd: () -> Unit,
+        onDontAdd: () -> Unit
+    ) {
+        AlertDialog(
+            onDismissRequest = { onDismissRequest() },
+            title = { Text("Barcode Details") },
+            text = { Text("Detected barcode: ${barcode.rawValue}") },
+            confirmButton = {
+                TextButton(onClick = { onAdd() }) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onDontAdd() }) {
+                    Text("Don't add")
                 }
             }
         )
