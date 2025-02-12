@@ -87,7 +87,7 @@ import kotlinx.coroutines.launch
 
 class ScanningActivity : ComponentActivity() {
     private var camService: CameraService = CameraService()
-    private var apiService: ApiService = ApiService("http://172.27.238.8:3000/")
+    private var apiService: ApiService = ApiService("http://172.27.232.6:3000/")
 
     private var showBottomSheet = mutableStateOf(false)
     private var openCreatePackageDialog = mutableStateOf(false)

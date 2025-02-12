@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -19,12 +20,15 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -35,6 +39,7 @@ import androidx.lifecycle.lifecycleScope
 import com.h4.dao.services.ApiService
 import com.h4.dao.ui.theme.DAOTheme
 import kotlinx.coroutines.launch
+import kotlin.math.exp
 
 class MainActivity : ComponentActivity() {
     private var apiService: ApiService = ApiService("http://172.27.232.5:3000/")
@@ -53,7 +58,8 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ScaffoldSetup() {
-        var presses by remember { mutableIntStateOf(0) }
+        var searchQuery by remember { mutableStateOf("") }
+        var expanded by remember { mutableStateOf(false) }
 
         Scaffold(
             topBar = {
@@ -63,21 +69,9 @@ class MainActivity : ComponentActivity() {
                         titleContentColor = MaterialTheme.colorScheme.primary,
                     ),
                     title = {
-                        Text(text = "Top app bar")
+                        Text(text = "DAO Registration app")
                     }
                 )
-            },
-            bottomBar = {
-                BottomAppBar(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ) {
-                    Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        text = "Bottom app bar",
-                    )
-                }
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = {
@@ -97,55 +91,25 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier
                         .padding(16.dp)
                 ) {
-                    Text(text =
-                    """
-                    This is an example of a scaffold. It uses the Scaffold composable's parameters to create a screen with a simple top app bar, bottom app bar, and floating action button.
-
-                    It also contains some basic inner content, such as this text.
-
-                    You have pressed the floating action button $presses times.
-                    """.trimIndent()
-                    )
-
-                    Button(onClick = {
-                        lifecycleScope.launch {
-                            try {
-                                apiService.makeWebhookGetCall()
-
-                                val data = Package(
-                                    id = 1,
-                                    shopId = 1,
-                                    senderId = 1,
-                                    createdDate = 1738915166,
-                                    deliveryTime = 1741330766,
-                                    deliveryStatus = "pending"
-                                )
-                                apiService.makeWebhookPostCall(data)
-
-
-                                apiService.makeApiCall()
-                            } catch (e: Exception) {
-                                println("Error: ${e.message}")
-                            }
+                    Row {
+                        SearchBar(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            onSearch = {
+                                lifecycleScope.launch {
+                                    //val result = apiService.getDAO(searchQuery)
+                                    Log.d("DAO", "peener")
+                                }
+                            },
+                            active = expanded,
+                            onActiveChange = { expanded = it }
+                        ) {
+                            Text(
+                                text = "Search DAO",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
-                        presses++
-                    }) {
-                        Text("Press me")
-                    }
-
-                    Button(onClick = {
-                        lifecycleScope.launch {
-                            try {
-                                val pendingPackages = apiService.getPendingPackages()
-                                Log.d("MainActivity", "Pending packages: $pendingPackages")
-
-                            } catch (e: Exception) {
-                                println("Error: ${e.message}")
-                            }
-                        }
-                        presses++
-                    }) {
-                        Text("Get pending packages")
                     }
                 }
             }
