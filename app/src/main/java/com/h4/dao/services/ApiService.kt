@@ -1,7 +1,6 @@
 package com.h4.dao.services
 
-import android.util.Log
-import com.h4.dao.Package
+import com.h4.dao.Delivery
 import com.h4.dao.PendingPackage
 import com.h4.dao.interfaces.IApiService
 import com.h4.dao.interfaces.IWebhookService
@@ -62,18 +61,8 @@ class ApiService(private val baseUrl: String) {
         enqueueCall(call, continuation)
     }
 
-    suspend fun makeWebhookPostCall(body: Package) = suspendCancellableCoroutine { continuation ->
+    suspend fun makeWebhookPostCall(body: Delivery) = suspendCancellableCoroutine { continuation ->
         val call: Call<ResponseBody> = webhookService.post(body)
-
-        continuation.invokeOnCancellation {
-            call.cancel()
-        }
-
-        enqueueCall(call, continuation)
-    }
-
-    suspend fun makeApiCall() = suspendCancellableCoroutine { continuation ->
-        val call: Call<ResponseBody> = apiService.hello()
 
         continuation.invokeOnCancellation {
             call.cancel()
@@ -94,6 +83,16 @@ class ApiService(private val baseUrl: String) {
 
     suspend fun registerPackages(packages: List<Int>) = suspendCancellableCoroutine { continuation ->
         val call: Call<Boolean> = apiService.registerPackages(packages)
+
+        continuation.invokeOnCancellation {
+            call.cancel()
+        }
+
+        enqueueCall(call, continuation)
+    }
+
+    suspend fun getDeliveries() = suspendCancellableCoroutine { continuation ->
+        val call: Call<List<Delivery>> = apiService.getDeliveries()
 
         continuation.invokeOnCancellation {
             call.cancel()
