@@ -10,6 +10,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.content.IntentFilter
+import android.location.Location
 import android.os.Build
 import com.google.mlkit.vision.barcode.common.Barcode
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -115,63 +116,97 @@ class ScanningActivity : ComponentActivity() {
 
         val shopName = intent.getStringExtra("shopName")
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
             return
         }
 
-        getlastLocation()
+        getlastLocation(
+            onSuccess = { location ->
+                Log.d("UwU", "Location: ${location.latitude}, ${location.longitude}")
+                val distance = calculateDistance(location.latitude, location.longitude)
+                Log.d("TemporarysdSA", "Distance: $distance")
+                var withinDistance = false
+                if (distance < 100.0) {
+                    withinDistance = true
+                }
 
-        if (shopName == null) {
-            errorDialog = true
-            errorTitle = "Error"
-            errorText = "Shop name not provided"
-        } else if () {
-            shop = shopName
-            loadPackagesFromApi(shop)
-        }
-
-        enableEdgeToEdge()
-        setContent {
-            DAOTheme {
-                if (errorDialog) {
-                    PopupDialog(
-                        onDismissRequest = { errorDialog = false },
-                        onConfirmation = {
-                            finish()
-                        },
-                        title = errorTitle,
-                        text = errorText,
-                        showDismiss = false
-                    )
+                if (shopName == null) {
+                    errorDialog = true
+                    errorTitle = "Error"
+                    errorText = "Shop name not provided"
+                } else if (!withinDistance) {
+                    errorDialog = true
+                    errorTitle = "Location Error"
+                    errorText = "You are not within the required distance to scan packages"
                 } else {
-                    ScaffoldSetup()
+                    shop = shopName
+                    loadPackagesFromApi(shop)
+                }
+
+                enableEdgeToEdge()
+                setContent {
+                    DAOTheme {
+                        if (errorDialog) {
+                            PopupDialog(
+                                onDismissRequest = { errorDialog = false },
+                                onConfirmation = {
+                                    finish()
+                                },
+                                title = errorTitle,
+                                text = errorText,
+                                showDismiss = false
+                            )
+                        } else {
+                            ScaffoldSetup()
+                        }
+                    }
+                }
+            },
+            onFailure = { e ->
+                Log.e("UwU", "Failed to get location", e)
+
+                errorDialog = true
+                errorTitle = "Location Error"
+                errorText = "Failed to get location"
+
+                enableEdgeToEdge()
+                setContent {
+                    DAOTheme {
+                        PopupDialog(
+                            onDismissRequest = { errorDialog = false },
+                            onConfirmation = {
+                                finish()
+                            },
+                            title = errorTitle,
+                            text = errorText,
+                            showDismiss = false
+                        )
+                    }
                 }
             }
-        }
+        )
     }
 
-    private fun getlastLocation() {
+    @SuppressLint("MissingPermission")
+    private fun getlastLocation(
+        onSuccess: (Location) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
         fusedLocationClient.lastLocation
-            .addOnSuccessListener { location ->
-                if (location != null) {
-                    Log.d("ScanningActivityLocation", "Location: ${location.latitude}, ${location.longitude}")
-                    calculateDistance(location.latitude.toDouble(), location.longitude.toDouble())
-                } else {
-                    Log.d("ScanningActivityLocation", "Location is null")
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e("ScanningActivityLocation", "Failed to get location", e)
-            }
+            .addOnSuccessListener(onSuccess)
+            .addOnFailureListener(onFailure)
     }
 
-    private fun calculateDistance(lat: Double, long: Double){
+    private fun calculateDistance(lat: Double, long: Double): Float {
         val results = FloatArray(1)
 
-        val distance = android.location.Location.distanceBetween(55.396, 10.388, lat.toDouble(), long.toDouble(), results)
-        Log.d("ScanningActivityLocation", "Distance: ${results[0]}")
+        Log.d("TemporarysdSA", "Current Location: $lat, $long")
+        Location.distanceBetween(55.3808014, 10.4118364, lat, long, results)
+        return results[0]
     }
 
 
