@@ -1,9 +1,16 @@
 package com.h4.dao
 
+import android.annotation.SuppressLint
+import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.content.IntentFilter
+import android.os.Build
 import com.google.mlkit.vision.barcode.common.Barcode
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.LinearLayout
@@ -12,6 +19,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
@@ -74,8 +82,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.common.util.concurrent.ListenableFuture
 import com.h4.dao.services.ApiService
 import com.h4.dao.services.CameraService
@@ -87,6 +98,7 @@ import kotlinx.coroutines.launch
 class ScanningActivity : ComponentActivity() {
     private var camService: CameraService = CameraService()
     private var apiService: ApiService = ApiService("http://172.27.238.8:3000/")
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     private var showBottomSheet = mutableStateOf(false)
     private var openCreatePackageDialog = mutableStateOf(false)
@@ -101,6 +113,16 @@ class ScanningActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
+            return
+        }
+
+        getlastLocation()
+
         loadPackagesFromApi()
 
         enableEdgeToEdge()
@@ -110,6 +132,29 @@ class ScanningActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun getlastLocation() {
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    Log.d("ScanningActivityLocation", "Location: ${location.latitude}, ${location.longitude}")
+                    calculateDistance(location.latitude.toDouble(), location.longitude.toDouble())
+                } else {
+                    Log.d("ScanningActivityLocation", "Location is null")
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("ScanningActivityLocation", "Failed to get location", e)
+            }
+    }
+
+    private fun calculateDistance(lat: Double, long: Double){
+        val results = FloatArray(1)
+
+        val distance = android.location.Location.distanceBetween(55.396, 10.388, lat.toDouble(), long.toDouble(), results)
+        Log.d("ScanningActivityLocation", "Distance: ${results[0]}")
+    }
+
 
     private fun loadPackagesFromApi() {
         lifecycleScope.launch {
@@ -137,6 +182,7 @@ class ScanningActivity : ComponentActivity() {
             }
         }
     }
+
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -515,6 +561,8 @@ class ScanningActivity : ComponentActivity() {
     fun CameraView() {
         var isPermissionGranted by remember { mutableStateOf(false) }
         var requestPermission by remember { mutableStateOf(false) }
+        var isLocationPermissionGranted by remember { mutableStateOf(false) }
+        var requestLocationPermission by remember { mutableStateOf(false) }
 
         val context = LocalContext.current
 
@@ -522,6 +570,11 @@ class ScanningActivity : ComponentActivity() {
             isPermissionGranted = ContextCompat.checkSelfPermission(
                 context,
                 android.Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+
+            isLocationPermissionGranted = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         }
 
@@ -532,15 +585,37 @@ class ScanningActivity : ComponentActivity() {
             }
         }
 
-        when (isPermissionGranted) {
-            true -> CameraPreview(camService.getCameraProviderFuture(context))
-            false -> Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround) {
+        if(requestLocationPermission) {
+            RequestLocationPermission { isGranted ->
+                isLocationPermissionGranted = isGranted
+                requestLocationPermission = false
+            }
+        }
+
+        when {
+            !isPermissionGranted -> Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceAround
+            ) {
                 Button(onClick = {
                     requestPermission = true
                 }) {
-                    Text("Request permission")
+                    Text("Request Camera Permission")
                 }
             }
+            !isLocationPermissionGranted -> Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceAround
+            ) {
+                Button(onClick = {
+                    requestLocationPermission = true
+                }) {
+                    Text("Request Location Permission")
+                }
+            }
+            else -> CameraPreview(camService.getCameraProviderFuture(context))
         }
     }
 
@@ -636,6 +711,19 @@ class ScanningActivity : ComponentActivity() {
 
         LaunchedEffect(Unit) {
             launcher.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+
+    @Composable
+    fun RequestLocationPermission(
+        onResult: (Boolean) -> Unit,
+    ) {
+        val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
+            onResult(isGranted)
+        }
+
+        LaunchedEffect(Unit) {
+            launcher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
