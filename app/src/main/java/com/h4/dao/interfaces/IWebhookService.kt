@@ -1,6 +1,6 @@
 package com.h4.dao.interfaces
 
-import com.h4.dao.Package
+import com.h4.dao.Delivery
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.Body
@@ -12,5 +12,5 @@ interface IWebhookService {
     fun get(): Call<ResponseBody>
 
     @POST("ed6c80fd-283b-49d9-9e60-b9fe0d661ac4")
-    fun post(@Body body: Package): Call<ResponseBody>
+    fun post(@Body body: Delivery): Call<ResponseBody>
 }

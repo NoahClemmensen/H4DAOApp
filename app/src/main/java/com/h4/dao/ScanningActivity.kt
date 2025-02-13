@@ -23,14 +23,12 @@ import androidx.annotation.RequiresApi
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,7 +37,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.AlertDialog
@@ -63,7 +60,6 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,8 +67,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusModifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -92,7 +86,6 @@ import com.h4.dao.services.ApiService
 import com.h4.dao.services.CameraService
 import com.h4.dao.ui.theme.DAOTheme
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 class ScanningActivity : ComponentActivity() {
@@ -161,14 +154,14 @@ class ScanningActivity : ComponentActivity() {
             try {
                 val packages = apiService.getPendingPackages()
                 if (packages != null) {
-                    pendingPackages.value = packages
+                    this@ScanningActivity.pendingPackages.value = packages
                 } else {
-                    pendingPackages.value = listOf()
+                    this@ScanningActivity.pendingPackages.value = listOf()
                 }
 
-                Log.d("ScanningActivity", "Fetched pending packages: $packages")
+                Log.d("UwU", "Fetched pending packages: $packages")
             } catch (e: Exception) {
-                Log.e("ScanningActivity", "Failed to fetch pending packages", e)
+                Log.e("UwU", "Failed to fetch pending packages", e)
                 pendingPackages.value = listOf()
             }
         }
@@ -182,7 +175,6 @@ class ScanningActivity : ComponentActivity() {
             }
         }
     }
-
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -257,10 +249,10 @@ class ScanningActivity : ComponentActivity() {
                                         loadPackagesFromApi()
                                     }
 
-                                    Log.d("ScanningActivity", "Marked packages as delivered: $response")
+                                    Log.d("UwU", "Marked packages as delivered: $response")
                                 } catch (e: Exception) {
                                     Log.e(
-                                        "ScanningActivity",
+                                        "UwU",
                                         "Failed to mark packages as delivered",
                                         e
                                     )
@@ -427,7 +419,7 @@ class ScanningActivity : ComponentActivity() {
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Package ID: ${pack.barcode}",
+                            text = "Barcode: ${pack.barcode}",
                             modifier = Modifier.fillMaxWidth(),
                             fontSize = 14.sp
                         )
@@ -658,7 +650,7 @@ class ScanningActivity : ComponentActivity() {
 
         if (showDialog && detectedBarcode != null) {
             BarcodeDetailsDialog(
-                barcode = detectedBarcode!!,
+                barcode = detectedBarcode!!.rawValue!!,
                 onDismissRequest = {
                     showDialog = false
                     isScanning = true
@@ -667,6 +659,10 @@ class ScanningActivity : ComponentActivity() {
                     // Handle add action
                     showDialog = false
                     isScanning = true
+
+                    if (detectedBarcode!!.rawValue != null && detectedBarcode!!.rawValue!!.toIntOrNull() != null) {
+                        onScanPackage(detectedBarcode!!.rawValue!!.toInt())
+                    }
                 },
                 onDontAdd = {
                     // Handle don't add action
@@ -679,7 +675,7 @@ class ScanningActivity : ComponentActivity() {
 
     @Composable
     fun BarcodeDetailsDialog(
-        barcode: Barcode,
+        barcode: String,
         onDismissRequest: () -> Unit,
         onAdd: () -> Unit,
         onDontAdd: () -> Unit
@@ -687,7 +683,7 @@ class ScanningActivity : ComponentActivity() {
         AlertDialog(
             onDismissRequest = { onDismissRequest() },
             title = { Text("Barcode Details") },
-            text = { Text("Detected barcode: ${barcode.rawValue}") },
+            text = { Text("Detected barcode: $barcode") },
             confirmButton = {
                 TextButton(onClick = { onAdd() }) {
                     Text("Add")
@@ -714,16 +710,16 @@ class ScanningActivity : ComponentActivity() {
         }
     }
 
+    @Preview(showBackground = true, name = "Barcode details dialog")
     @Composable
-    fun RequestLocationPermission(
-        onResult: (Boolean) -> Unit,
-    ) {
-        val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
-            onResult(isGranted)
-        }
-
-        LaunchedEffect(Unit) {
-            launcher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    fun BarcodeDetailsDialogPreview() {
+        DAOTheme {
+            BarcodeDetailsDialog(
+                "123456789",
+                onDismissRequest = {},
+                onAdd = {},
+                onDontAdd = {},
+            )
         }
     }
 
