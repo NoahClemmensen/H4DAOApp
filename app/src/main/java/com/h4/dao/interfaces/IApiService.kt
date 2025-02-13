@@ -6,13 +6,14 @@ import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface IApiService {
     @GET("/getDeliveries")
     fun getDeliveries(): Call<List<Delivery>>
 
     @GET("/getPendingPackages/{shopName}")
-    fun getPendingPackages(shopName: String): Call<List<PendingPackage>>
+    fun getPendingPackages(@Path("shopName") shopName: String): Call<List<PendingPackage>>
 
     @POST("/registerPackages")
     fun registerPackages(

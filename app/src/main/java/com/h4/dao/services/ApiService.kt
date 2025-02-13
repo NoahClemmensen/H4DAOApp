@@ -1,5 +1,6 @@
 package com.h4.dao.services
 
+import android.util.Log
 import com.h4.dao.Delivery
 import com.h4.dao.PendingPackage
 import com.h4.dao.interfaces.IApiService
@@ -46,6 +47,7 @@ class ApiService() {
     }
 
     suspend fun getPendingPackages(shopName: String) = suspendCancellableCoroutine { continuation ->
+        Log.d("LALA", "getPendingPackages")
         val call: Call<List<PendingPackage>> = apiService.getPendingPackages(shopName)
 
         continuation.invokeOnCancellation {

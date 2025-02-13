@@ -126,9 +126,8 @@ class ScanningActivity : ComponentActivity() {
 
         getlastLocation(
             onSuccess = { location ->
-                Log.d("UwU", "Location: ${location.latitude}, ${location.longitude}")
                 val distance = calculateDistance(location.latitude, location.longitude)
-                Log.d("TemporarysdSA", "Distance: $distance")
+
                 var withinDistance = false
                 if (distance < 100.0) {
                     withinDistance = true
@@ -204,7 +203,7 @@ class ScanningActivity : ComponentActivity() {
     private fun calculateDistance(lat: Double, long: Double): Float {
         val results = FloatArray(1)
 
-        Log.d("TemporarysdSA", "Current Location: $lat, $long")
+        Log.d("UwU", "Current Location: $lat, $long")
         Location.distanceBetween(55.3808014, 10.4118364, lat, long, results)
         return results[0]
     }
@@ -213,16 +212,18 @@ class ScanningActivity : ComponentActivity() {
     private fun loadPackagesFromApi(shopName: String) {
         lifecycleScope.launch {
             try {
+                Log.d("LALA", "Shop name: $shopName")
                 val packages = apiService.getPendingPackages(shopName)
+                Log.d("LALA", "Fetched pending packages: $packages")
                 if (packages != null) {
                     this@ScanningActivity.pendingPackages.value = packages
                 } else {
                     this@ScanningActivity.pendingPackages.value = listOf()
                 }
 
-                Log.d("UwU", "Fetched pending packages: $packages")
+                Log.d("LALA", "Fetched pending packages: $packages")
             } catch (e: Exception) {
-                Log.e("UwU", "Failed to fetch pending packages", e)
+                Log.e("LALA", "Failed to fetch pending packages", e)
                 pendingPackages.value = listOf()
             }
         }
