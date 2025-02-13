@@ -710,6 +710,18 @@ class ScanningActivity : ComponentActivity() {
         }
     }
 
+    @Composable
+    fun RequestLocationPermission(
+        onResult: (Boolean) -> Unit,
+    ) {
+        val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
+            onResult(isGranted)
+        }
+        LaunchedEffect(Unit) {
+            launcher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
     @Preview(showBackground = true, name = "Barcode details dialog")
     @Composable
     fun BarcodeDetailsDialogPreview() {
