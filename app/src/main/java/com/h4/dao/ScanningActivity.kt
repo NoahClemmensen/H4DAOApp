@@ -79,11 +79,14 @@ import kotlinx.coroutines.launch
 
 class ScanningActivity : ComponentActivity() {
     private var camService: CameraService = CameraService()
-    private var apiService: ApiService = ApiService("http://172.27.236.7:3000/")
+    private var apiService: ApiService = ApiService()
 
     private var showBottomSheet = mutableStateOf(false)
     private var openCreatePackageDialog = mutableStateOf(false)
     private var openConfirmationDialog = mutableStateOf(false)
+
+    private var shop: String = ""
+
     private var pendingPackages: MutableStateFlow<List<PendingPackage>> = MutableStateFlow(
         listOf()
     )
@@ -94,20 +97,45 @@ class ScanningActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        loadPackagesFromApi()
+        var errorDialog by mutableStateOf(false)
+        var errorTitle by mutableStateOf("")
+        var errorText by mutableStateOf("")
+
+        val shopName = intent.getStringExtra("shopName")
+
+        if (shopName == null) {
+            errorDialog = true
+            errorTitle = "Error"
+            errorText = "Shop name not provided"
+        } else {
+            shop = shopName
+            loadPackagesFromApi(shop)
+        }
 
         enableEdgeToEdge()
         setContent {
             DAOTheme {
-                ScaffoldSetup()
+                if (errorDialog) {
+                    PopupDialog(
+                        onDismissRequest = { errorDialog = false },
+                        onConfirmation = {
+                            finish()
+                        },
+                        title = errorTitle,
+                        text = errorText,
+                        showDismiss = false
+                    )
+                } else {
+                    ScaffoldSetup()
+                }
             }
         }
     }
 
-    private fun loadPackagesFromApi() {
+    private fun loadPackagesFromApi(shopName: String) {
         lifecycleScope.launch {
             try {
-                val packages = apiService.getPendingPackages()
+                val packages = apiService.getPendingPackages(shopName)
                 if (packages != null) {
                     this@ScanningActivity.pendingPackages.value = packages
                 } else {
@@ -201,7 +229,7 @@ class ScanningActivity : ComponentActivity() {
 
                                     if (response != null && response) {
                                         scannedPackages.value = listOf()
-                                        loadPackagesFromApi()
+                                        loadPackagesFromApi(shop)
                                     }
 
                                     Log.d("UwU", "Marked packages as delivered: $response")
@@ -244,38 +272,74 @@ class ScanningActivity : ComponentActivity() {
         onDismissRequest: () -> Unit,
         onConfirmation: () -> Unit,
     ) {
-        AlertDialog(
-            icon = {
-                Icon(Icons.Outlined.Check, contentDescription = "Checkmark")
-            },
-            title = {
-                Text("Mark scanned packages as delivered")
-            },
-            text = {
-                Text("Do you want to confirm these packages delivered?")
-            },
-            onDismissRequest = {
-                onDismissRequest()
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onConfirmation()
-                    }
-                ) {
-                    Text("Confirm")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        onDismissRequest()
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
+        PopupDialog(
+            onDismissRequest = onDismissRequest,
+            onConfirmation = onConfirmation,
+            title = "Mark scanned packages as delivered",
+            text = "Do you want to confirm these packages delivered?"
         )
+    }
+
+    @Composable
+    fun PopupDialog(
+        onDismissRequest: () -> Unit,
+        onConfirmation: () -> Unit,
+        title: String,
+        text: String,
+        showDismiss: Boolean = true,
+    ) {
+        if (showDismiss) {
+            AlertDialog(
+                title = {
+                    Text(title)
+                },
+                text = {
+                    Text(text)
+                },
+                onDismissRequest = {
+                    onDismissRequest()
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onConfirmation()
+                        }
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            onDismissRequest()
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        } else {
+            AlertDialog(
+                title = {
+                    Text(title)
+                },
+                text = {
+                    Text(text)
+                },
+                onDismissRequest = {
+                    onDismissRequest()
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onConfirmation()
+                        }
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+            )
+        }
     }
 
     @Composable
@@ -346,6 +410,7 @@ class ScanningActivity : ComponentActivity() {
         }
     }
 
+
     @Composable
     fun PackageDetails(
         pack: PendingPackage,
@@ -368,7 +433,7 @@ class ScanningActivity : ComponentActivity() {
                 ) {
                     Icon(Icons.Outlined.Info, "Info")
                     Text(
-                        pack.name,
+                        pack.shopName,
                         modifier = Modifier.fillMaxWidth(),
                         fontSize = 24.sp
                     )
@@ -379,22 +444,22 @@ class ScanningActivity : ComponentActivity() {
                             fontSize = 14.sp
                         )
                         Text(
-                            text = "Address: ${pack.address}",
+                            text = "Address: ${pack.shopAddress}",
                             modifier = Modifier.fillMaxWidth(),
                             fontSize = 14.sp
                         )
                         Text(
-                            text = "Zip code: ${pack.zipcode}",
+                            text = "Zip code: ${pack.shopZipcode}",
                             modifier = Modifier.fillMaxWidth(),
                             fontSize = 14.sp
                         )
                         Text(
-                            text = "Email: ${pack.email}",
+                            text = "Email: ${pack.shopEmail}",
                             modifier = Modifier.fillMaxWidth(),
                             fontSize = 14.sp
                         )
                         Text(
-                            text = "Phone: ${pack.phone}",
+                            text = "Phone: ${pack.shopPhone}",
                             modifier = Modifier.fillMaxWidth(),
                             fontSize = 14.sp
                         )
@@ -474,7 +539,6 @@ class ScanningActivity : ComponentActivity() {
                 }
             }
         }
-
     }
 
     @Composable
@@ -487,8 +551,8 @@ class ScanningActivity : ComponentActivity() {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(text = pack.barcode.toString(), fontWeight = FontWeight.SemiBold)
-            Text(text = pack.name)
-            Text(text = pack.address, modifier = Modifier.weight(1f), overflow = TextOverflow.Ellipsis, maxLines = 1)
+            Text(text = pack.shopName)
+            Text(text = pack.shopAddress, modifier = Modifier.weight(1f), overflow = TextOverflow.Ellipsis, maxLines = 1)
             VerticalDivider()
             TextButton(onClick = {
                 detailsOpened = true

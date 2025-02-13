@@ -13,7 +13,7 @@ data class Delivery(
     @SerializedName("sender_name") override val shopName: String,
     @SerializedName("sender_address") override val senderAddress: String,
     @SerializedName("shop_address") override val shopAddress: String,
-    @SerializedName("shop_zip_code") override val senderZipcode: String,
+    @SerializedName("sender_zip_code") override val senderZipcode: String,
     @SerializedName("shop_zip_code") override val shopZipcode: String,
     @SerializedName("sender_phone") override val senderPhone: String,
     @SerializedName("shop_phone") override val shopPhone: String,

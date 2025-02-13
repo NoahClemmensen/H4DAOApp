@@ -11,8 +11,8 @@ interface IApiService {
     @GET("/getDeliveries")
     fun getDeliveries(): Call<List<Delivery>>
 
-    @GET("/getPendingPackages")
-    fun getPendingPackages(): Call<List<PendingPackage>>
+    @GET("/getPendingPackages/{shopName}")
+    fun getPendingPackages(shopName: String): Call<List<PendingPackage>>
 
     @POST("/registerPackages")
     fun registerPackages(
